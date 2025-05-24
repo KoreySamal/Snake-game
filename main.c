@@ -10,6 +10,12 @@
 #define SIZE 4
 #define CELL_SIZE 20
 
+enum Cell_state {
+    EMPTY,
+    SNAKE,
+    APPLE,
+};
+
 const int SCREEN_WIDTH = SIZE * CELL_SIZE;
 const int SCREEN_HEIGHT = SIZE * CELL_SIZE;
 const Uint32 TARGET_FRAME_TIME = 500;
@@ -44,18 +50,18 @@ void Draw_snake_segment(int x_center, int y_center) {
     SDL_RenderFillRect(renderer, &rect);
 }
 
-void Generate_apple(int state[SIZE][SIZE], int snake_segments) {
+void Generate_apple(enum Cell_state map[SIZE][SIZE], int snake_segments) {
     int apple_rand = rand()%(SIZE * SIZE - snake_segments);
     int apple_new_index = - 1;
     while(apple_rand >= 0) {
-        if(state[0][apple_new_index + 1] == 0) {
+        if(map[0][apple_new_index + 1] == EMPTY) {
             apple_rand--;
             apple_new_index++;
         } else {
             apple_new_index++;
         }
     }
-    state[0][apple_new_index] = 2;
+    map[0][apple_new_index] = APPLE;
 }
 
 struct Snake_segment {
@@ -88,9 +94,12 @@ int main(int argc, char* argv[]) {
     int snake_direction = 4;
     int snake_segments = 1;
     int run = 1;
-    int state[SIZE][SIZE] = {0};
-    state[head.y][head.x] = 1;
-    Generate_apple(state, snake_segments);
+    enum Cell_state map[SIZE][SIZE];
+    for(int i = 0; i < SIZE * SIZE; i++) {
+        map[0][i] = EMPTY;
+    }
+    map[head.y][head.x] = SNAKE;
+    Generate_apple(map, snake_segments);
     SDL_Rect rect = {
         .x = 0,
         .y = 0,
@@ -122,7 +131,7 @@ int main(int argc, char* argv[]) {
             segment->y = segment->prev->y;
             segment = segment->prev;
         }
-        state[old_y][old_x] = 0;
+        map[old_y][old_x] = EMPTY;
         switch (snake_direction) {
             case 0: head.x++; break;
             case 1: head.y++; break;
@@ -138,7 +147,7 @@ int main(int argc, char* argv[]) {
         } else if(head.y == - 1) {
             head.y = SIZE - 1;
         }
-        if(state[head.y][head.x] == 2) {
+        if(map[head.y][head.x] == APPLE) {
             tail->next = malloc(sizeof(struct Snake_segment));
             tail->next->prev = tail;
             tail = tail->next;
@@ -146,19 +155,19 @@ int main(int argc, char* argv[]) {
             tail->y = old_y;
             tail->next = NULL;
             snake_segments++;
-            state[old_y][old_x] = 1;
-            state[head.y][head.x] = 1;
+            map[old_y][old_x] = SNAKE;
+            map[head.y][head.x] = SNAKE;
             if(snake_segments == SIZE * SIZE) {
                 printf("Win");
                 run = 0;
             } else {
-                Generate_apple(state, snake_segments);
+                Generate_apple(map, snake_segments);
             }
-        } else if(state[head.y][head.x] == 1) {
+        } else if(map[head.y][head.x] == SNAKE) {
             run = 0;
             printf("Game Over");
         } else {
-            state[head.y][head.x] = 1;
+            map[head.y][head.x] = SNAKE;
         }
         SDL_SetRenderDrawColor(renderer, 200, 200, 200, 1);
         SDL_RenderClear(renderer);
@@ -168,12 +177,12 @@ int main(int argc, char* argv[]) {
                 rect.x = x * rect.w;
                 rect.y = y * rect.h;
                 SDL_RenderDrawRect(renderer, &rect);
-                switch (state[y][x]) {
-                    case 1:
+                switch (map[y][x]) {
+                    case SNAKE:
                         Draw_snake_segment(x * rect.w + rect.w / 2, y * rect.h + rect.h / 2);
                         SDL_SetRenderDrawColor(renderer, 128, 128, 128, 1);
                         break;
-                    case 2:
+                    case APPLE:
                         Draw_apple(x * rect.w + rect.w / 2, y * rect.h + rect.h / 2);
                         SDL_SetRenderDrawColor(renderer, 128, 128, 128, 1);
                         break;
