@@ -119,17 +119,23 @@ int main(int argc, char* argv[]) {
         .h = CELL_SIZE,
     };
     TTF_Font* font = TTF_OpenFont("terminus-ttf-4.49.3/TerminusTTF-4.49.3.ttf", 12);
-    SDL_Color gameover_color = {15, 15, 15};
-    SDL_Surface* gameover_surface = TTF_RenderText_Solid(font, "Game Over", gameover_color);
+    SDL_Color text_color = {15, 15, 15};
+    SDL_Surface* gameover_surface = TTF_RenderText_Solid(font, "Game Over", text_color);
     SDL_Texture* gameover_texture = SDL_CreateTextureFromSurface(renderer, gameover_surface);
     SDL_Rect gameover_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 150, 75};
     gameover_rect.x -= gameover_rect.w / 2;
     gameover_rect.y -= gameover_rect.h / 2;
-    SDL_Surface* gameover_hint_surface = TTF_RenderText_Solid(font, "Press ESC to quit", gameover_color);
-    SDL_Texture* gameover_hint_texture = SDL_CreateTextureFromSurface(renderer, gameover_hint_surface);
-    SDL_Rect gameover_hint_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + gameover_rect.h / 2 + 20, 120, 30};
-    gameover_hint_rect.x -= gameover_hint_rect.w / 2;
-    gameover_hint_rect.y -= gameover_hint_rect.h / 2;
+    SDL_Surface* hint_surface = TTF_RenderText_Solid(font, "Press ESC to quit", text_color);
+    SDL_Texture* hint_texture = SDL_CreateTextureFromSurface(renderer, hint_surface);
+    SDL_Rect hint_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + gameover_rect.h / 2 + 20, 120, 30};
+    hint_rect.x -= hint_rect.w / 2;
+    hint_rect.y -= hint_rect.h / 2;
+
+    SDL_Surface* win_surface = TTF_RenderText_Solid(font, "You Win!", text_color);
+    SDL_Texture* win_texture = SDL_CreateTextureFromSurface(renderer, win_surface);
+    SDL_Rect win_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 150, 75};
+    win_rect.x -= win_rect.w / 2;
+    win_rect.y -= win_rect.h / 2;
     while(game_state == RUNNING) {
         Uint32 start_time = SDL_GetTicks();
         SDL_Event event;
@@ -213,7 +219,10 @@ int main(int argc, char* argv[]) {
         }
         if(game_state == GAMEOVER) {
             SDL_RenderCopy(renderer, gameover_texture, NULL, &gameover_rect);
-            SDL_RenderCopy(renderer, gameover_hint_texture, NULL, &gameover_hint_rect);
+            SDL_RenderCopy(renderer, hint_texture, NULL, &hint_rect);
+        } else if(game_state == WIN) {
+            SDL_RenderCopy(renderer, win_texture, NULL, &win_rect);
+            SDL_RenderCopy(renderer, hint_texture, NULL, &hint_rect);
         }
         SDL_RenderPresent(renderer);
         switch (game_state) {
@@ -225,6 +234,7 @@ int main(int argc, char* argv[]) {
                 }
                 break;
             case GAMEOVER:
+            case WIN:
                 while(1) {
                     SDL_WaitEvent(&event);
                     if(event.type == SDL_KEYDOWN) {
