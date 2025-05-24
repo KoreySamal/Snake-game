@@ -1,13 +1,15 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_surface.h>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdlib.h>
 
-#define SIZE 4
+#define SIZE 25
 #define CELL_SIZE 20
 
 enum Cell_state {
@@ -16,9 +18,16 @@ enum Cell_state {
     APPLE,
 };
 
+enum Game_state {
+    RUNNING,
+    GAMEOVER,
+    WIN,
+    EXIT,
+};
+
 const int SCREEN_WIDTH = SIZE * CELL_SIZE;
 const int SCREEN_HEIGHT = SIZE * CELL_SIZE;
-const Uint32 TARGET_FRAME_TIME = 500;
+const Uint32 TARGET_FRAME_TIME = 300;
 
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
@@ -84,6 +93,9 @@ int main(int argc, char* argv[]) {
     if(renderer == NULL) {
         printf("Ошибка, не удалось создать рендерер, %s\n", SDL_GetError());
     }
+    if(TTF_Init() != 0) {
+        printf("Ошибка, не удалось инициализировать шрифт %s\n", TTF_GetError());
+    }
     struct Snake_segment head = {
         .x = SIZE * 0.5,
         .y = SIZE * 0.5,
@@ -93,7 +105,7 @@ int main(int argc, char* argv[]) {
     struct Snake_segment* tail = &head;
     int snake_direction = 4;
     int snake_segments = 1;
-    int run = 1;
+    enum Game_state game_state = RUNNING;
     enum Cell_state map[SIZE][SIZE];
     for(int i = 0; i < SIZE * SIZE; i++) {
         map[0][i] = EMPTY;
@@ -106,16 +118,28 @@ int main(int argc, char* argv[]) {
         .w = CELL_SIZE,
         .h = CELL_SIZE,
     };
-    while(run) {
+    TTF_Font* font = TTF_OpenFont("terminus-ttf-4.49.3/TerminusTTF-4.49.3.ttf", 12);
+    SDL_Color gameover_color = {15, 15, 15};
+    SDL_Surface* gameover_surface = TTF_RenderText_Solid(font, "Game Over", gameover_color);
+    SDL_Texture* gameover_texture = SDL_CreateTextureFromSurface(renderer, gameover_surface);
+    SDL_Rect gameover_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 150, 75};
+    gameover_rect.x -= gameover_rect.w / 2;
+    gameover_rect.y -= gameover_rect.h / 2;
+    SDL_Surface* gameover_hint_surface = TTF_RenderText_Solid(font, "Press ESC to quit", gameover_color);
+    SDL_Texture* gameover_hint_texture = SDL_CreateTextureFromSurface(renderer, gameover_hint_surface);
+    SDL_Rect gameover_hint_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + gameover_rect.h / 2 + 20, 120, 30};
+    gameover_hint_rect.x -= gameover_hint_rect.w / 2;
+    gameover_hint_rect.y -= gameover_hint_rect.h / 2;
+    while(game_state == RUNNING) {
         Uint32 start_time = SDL_GetTicks();
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
             if(event.type == SDL_QUIT) {
-                run = 0;
+                game_state = EXIT;
             }
             if(event.type == SDL_KEYDOWN && !event.key.repeat) {
                 switch (event.key.keysym.sym) {
-                    case SDLK_ESCAPE: run = 0; break;
+                    case SDLK_ESCAPE: game_state = EXIT; break;
                     case SDLK_RIGHT: if(snake_direction != 2 || snake_segments < 2) {snake_direction = 0;} break;
                     case SDLK_DOWN: if(snake_direction != 3 || snake_segments < 2) {snake_direction = 1;} break;
                     case SDLK_LEFT: if(snake_direction != 0 || snake_segments < 2) {snake_direction = 2;} break;
@@ -158,14 +182,12 @@ int main(int argc, char* argv[]) {
             map[old_y][old_x] = SNAKE;
             map[head.y][head.x] = SNAKE;
             if(snake_segments == SIZE * SIZE) {
-                printf("Win");
-                run = 0;
+                game_state = WIN;
             } else {
                 Generate_apple(map, snake_segments);
             }
         } else if(map[head.y][head.x] == SNAKE) {
-            run = 0;
-            printf("Game Over");
+            game_state = GAMEOVER;
         } else {
             map[head.y][head.x] = SNAKE;
         }
@@ -189,11 +211,29 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
+        if(game_state == GAMEOVER) {
+            SDL_RenderCopy(renderer, gameover_texture, NULL, &gameover_rect);
+            SDL_RenderCopy(renderer, gameover_hint_texture, NULL, &gameover_hint_rect);
+        }
         SDL_RenderPresent(renderer);
-        Uint32 end_time = SDL_GetTicks();
-        Uint32 frame_time = end_time - start_time;
-        if(frame_time < TARGET_FRAME_TIME) {
-            SDL_Delay(TARGET_FRAME_TIME - frame_time);
+        switch (game_state) {
+            case RUNNING:
+                Uint32 end_time = SDL_GetTicks();
+                Uint32 frame_time = end_time - start_time;
+                if(frame_time < TARGET_FRAME_TIME) {
+                    SDL_Delay(TARGET_FRAME_TIME - frame_time);
+                }
+                break;
+            case GAMEOVER:
+                while(1) {
+                    SDL_WaitEvent(&event);
+                    if(event.type == SDL_KEYDOWN) {
+                        if(event.key.keysym.sym == SDLK_ESCAPE) {
+                            break;
+                        }
+                    }
+                }
+                break;
         }
     }
     return 0;
