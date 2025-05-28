@@ -131,23 +131,15 @@ int main(int argc, char* argv[]) {
     if(TTF_Init() != 0) {
         printf("Ошибка, не удалось инициализировать шрифт %s\n", TTF_GetError());
     }
-    struct Snake_segment head = {
-        .x = SIZE * 0.5,
-        .y = SIZE * 0.5,
-        .next = NULL,
-        .prev = NULL,
-    };
+    struct Snake_segment head;
+    head.prev = NULL;
     struct Snake_segment* tail = &head;
-    enum Direction snake_direction = STAND;
-    int snake_segments = 1;
+    enum Direction snake_direction;
+    int snake_segments;
     char score_text [17] = "Score: 1";
-    enum Game_state game_state = RUNNING;
+    enum Game_state game_state;
     enum Cell_state map[SIZE][SIZE];
-    for(int i = 0; i < SIZE * SIZE; i++) {
-        map[0][i] = EMPTY;
-    }
-    map[head.y][head.x] = SNAKE;
-    Generate_apple(map, snake_segments);
+    Restart_game(&snake_segments, &head, &tail, &game_state, map, &snake_direction);
     SDL_Rect rect = {
         .x = 0,
         .y = 0,
@@ -161,9 +153,9 @@ int main(int argc, char* argv[]) {
     SDL_Rect gameover_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 150, 75};
     gameover_rect.x -= gameover_rect.w / 2;
     gameover_rect.y -= gameover_rect.h / 2;
-    SDL_Surface* hint_surface = TTF_RenderText_Solid(font, "Press ESC to quit", text_color);
+    SDL_Surface* hint_surface = TTF_RenderText_Solid(font, "Press ESC to quit or R to restart", text_color);
     SDL_Texture* hint_texture = SDL_CreateTextureFromSurface(renderer, hint_surface);
-    SDL_Rect hint_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + gameover_rect.h / 2 + 25, 125, 25};
+    SDL_Rect hint_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + gameover_rect.h / 2 + 25, 250, 25};
     hint_rect.x -= hint_rect.w / 2;
     hint_rect.y -= hint_rect.h / 2;
     SDL_Surface* segments_surface = TTF_RenderText_Solid(font, score_text, text_color);
