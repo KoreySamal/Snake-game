@@ -2,6 +2,7 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_video.h>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -113,6 +114,7 @@ int main(int argc, char* argv[]) {
     struct Snake_segment* tail = &head;
     enum Direction snake_direction = STAND;
     int snake_segments = 1;
+    char score_text [17] = "Score: 1";
     enum Game_state game_state = RUNNING;
     enum Cell_state map[SIZE][SIZE];
     for(int i = 0; i < SIZE * SIZE; i++) {
@@ -135,9 +137,14 @@ int main(int argc, char* argv[]) {
     gameover_rect.y -= gameover_rect.h / 2;
     SDL_Surface* hint_surface = TTF_RenderText_Solid(font, "Press ESC to quit", text_color);
     SDL_Texture* hint_texture = SDL_CreateTextureFromSurface(renderer, hint_surface);
-    SDL_Rect hint_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + gameover_rect.h / 2 + 20, 120, 30};
+    SDL_Rect hint_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + gameover_rect.h / 2 + 25, 125, 25};
     hint_rect.x -= hint_rect.w / 2;
     hint_rect.y -= hint_rect.h / 2;
+    SDL_Surface* segments_surface = TTF_RenderText_Solid(font, score_text, text_color);
+    SDL_Texture* segments_texture = SDL_CreateTextureFromSurface(renderer, segments_surface);
+    SDL_Rect segments_rect = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + gameover_rect.h / 2 + 50, 70, 25};
+    segments_rect.x -= segments_rect.w / 2;
+    segments_rect.y -= segments_rect.h / 2;
 
     SDL_Surface* win_surface = TTF_RenderText_Solid(font, "You Win!", text_color);
     SDL_Texture* win_texture = SDL_CreateTextureFromSurface(renderer, win_surface);
@@ -196,6 +203,12 @@ int main(int argc, char* argv[]) {
             snake_segments++;
             map[old_y][old_x] = SNAKE;
             map[head.y][head.x] = SNAKE;
+            sprintf(score_text, "Score: %i", snake_segments);
+            SDL_DestroyTexture(segments_texture);
+            SDL_FreeSurface(segments_surface);
+            segments_surface = TTF_RenderText_Solid(font, score_text, text_color);
+            segments_texture = SDL_CreateTextureFromSurface(renderer, segments_surface);
+            SDL_SetWindowTitle(window, score_text);
             if(snake_segments == SIZE * SIZE) {
                 game_state = WIN;
             } else {
@@ -229,9 +242,11 @@ int main(int argc, char* argv[]) {
         if(game_state == GAMEOVER) {
             SDL_RenderCopy(renderer, gameover_texture, NULL, &gameover_rect);
             SDL_RenderCopy(renderer, hint_texture, NULL, &hint_rect);
+            SDL_RenderCopy(renderer, segments_texture, NULL, &segments_rect);
         } else if(game_state == WIN) {
             SDL_RenderCopy(renderer, win_texture, NULL, &win_rect);
             SDL_RenderCopy(renderer, hint_texture, NULL, &hint_rect);
+            SDL_RenderCopy(renderer, segments_texture, NULL, &segments_rect);
         }
         SDL_RenderPresent(renderer);
         switch (game_state) {
