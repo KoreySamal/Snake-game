@@ -89,6 +89,32 @@ struct Snake_segment {
     struct Snake_segment* prev;
 };
 
+void Restart_game(
+    int* snake_segments,
+    struct Snake_segment* head,
+    struct Snake_segment** tail,
+    enum Game_state* game_state,
+    enum Cell_state map[SIZE][SIZE],
+    enum Direction* snake_direction
+) {
+    *snake_segments = 1;
+    for(int i = 0; i < SIZE * SIZE; i++) {
+        map[0][i] = EMPTY;
+    }
+    head->x = SIZE * 0.5;
+    head->y = SIZE * 0.5;
+    map[head->y][head->x] = SNAKE;
+    Generate_apple(map, *snake_segments);
+    while(*tail != head) {
+        *tail = (*tail)->prev;
+        free((*tail)->next);
+    }
+    *snake_direction = STAND;
+    SDL_SetWindowTitle(window, "Snake");
+    head->next = NULL;
+    *game_state = RUNNING;
+}
+
 int main(int argc, char* argv[]) {
     srand(time(NULL));
     if(SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -263,6 +289,10 @@ int main(int argc, char* argv[]) {
                     SDL_WaitEvent(&event);
                     if(event.type == SDL_KEYDOWN) {
                         if(event.key.keysym.sym == SDLK_ESCAPE) {
+                            break;
+                        }
+                        if (event.key.keysym.sym == SDLK_r) {
+                            Restart_game(&snake_segments, &head, &tail, &game_state, map, &snake_direction);
                             break;
                         }
                     }
