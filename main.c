@@ -18,6 +18,14 @@ enum Cell_state {
     APPLE,
 };
 
+enum Direction {
+    RIGHT,
+    DOWN,
+    LEFT,
+    UP,
+    STAND,
+};
+
 enum Game_state {
     RUNNING,
     GAMEOVER,
@@ -103,7 +111,7 @@ int main(int argc, char* argv[]) {
         .prev = NULL,
     };
     struct Snake_segment* tail = &head;
-    int snake_direction = 4;
+    enum Direction snake_direction = STAND;
     int snake_segments = 1;
     enum Game_state game_state = RUNNING;
     enum Cell_state map[SIZE][SIZE];
@@ -139,6 +147,7 @@ int main(int argc, char* argv[]) {
     while(game_state == RUNNING) {
         Uint32 start_time = SDL_GetTicks();
         SDL_Event event;
+        enum Direction old_snake_direction = snake_direction;
         while(SDL_PollEvent(&event)) {
             if(event.type == SDL_QUIT) {
                 game_state = EXIT;
@@ -146,10 +155,10 @@ int main(int argc, char* argv[]) {
             if(event.type == SDL_KEYDOWN && !event.key.repeat) {
                 switch (event.key.keysym.sym) {
                     case SDLK_ESCAPE: game_state = EXIT; break;
-                    case SDLK_RIGHT: if(snake_direction != 2 || snake_segments < 2) {snake_direction = 0;} break;
-                    case SDLK_DOWN: if(snake_direction != 3 || snake_segments < 2) {snake_direction = 1;} break;
-                    case SDLK_LEFT: if(snake_direction != 0 || snake_segments < 2) {snake_direction = 2;} break;
-                    case SDLK_UP: if(snake_direction != 1 || snake_segments < 2) {snake_direction = 3;} break;
+                    case SDLK_RIGHT: if(old_snake_direction != LEFT || snake_segments < 2) {snake_direction = RIGHT;} break;
+                    case SDLK_DOWN: if(old_snake_direction != UP || snake_segments < 2) {snake_direction = DOWN;} break;
+                    case SDLK_LEFT: if(old_snake_direction != RIGHT || snake_segments < 2) {snake_direction = LEFT;} break;
+                    case SDLK_UP: if(old_snake_direction != DOWN || snake_segments < 2) {snake_direction = UP;} break;
                 }
             }
         }
@@ -163,10 +172,10 @@ int main(int argc, char* argv[]) {
         }
         map[old_y][old_x] = EMPTY;
         switch (snake_direction) {
-            case 0: head.x++; break;
-            case 1: head.y++; break;
-            case 2: head.x--; break;
-            case 3: head.y--; break;
+            case RIGHT: head.x++; break;
+            case DOWN: head.y++; break;
+            case LEFT: head.x--; break;
+            case UP: head.y--; break;
         }
         if(head.x == SIZE) {
             head.x = 0;
